@@ -1,4 +1,4 @@
-import cmd, sys, subprocess
+import cmd, sys, subprocess, os
 
 class MyPrompt(cmd.Cmd):
 	intro = "Welcome to LibreWorkshop. Type help or ? to list commands.\n"
@@ -26,8 +26,11 @@ class MyPrompt(cmd.Cmd):
 
 	def do_download(self, arg):
 		"Launches SteamCMD and then quits."
-		subprocess.call([self.steamcdm_path, "+quit"])
-		print("\nMods downloaded\n")
+		if os.path.isfile(self.steamcdm_path):
+			subprocess.call([self.steamcdm_path, "+quit"])
+			print("\nMods downloaded\n")
+		else:
+			print("Error: SteamCMD not detected at {0}".format(self.steamcdm_path))
 
 
 if __name__ == '__main__':
