@@ -61,17 +61,27 @@ class ModList:
 
 class SteamCmd:
 	path = "E:\\Programing\\SteamCMD\\steamcmd.exe"
+	login = "+login anonymous"
 
 	def run(action, arg):
 		if os.path.isfile(SteamCmd.path):
-			funcion = getattr(SteamCmd, action)
+			function = getattr(SteamCmd, action)
 			function()
 		else:
-			print("Error: SteamCdm not detected.")
+			print("Error: SteamCmd not detected.")
 
 	def download():
-		subprocess.call([SteamCmd.path, "+quit"])
-		print("\nMods downloaded\n")
+		modlist = ModList.read()
+		if modlist:
+			steamcmd_call = [SteamCmd.path, SteamCmd.login]
+			modlist_to_line = ""
+			for mod in modlist:
+				steamcmd_call.append("+workshop_download_item " + mod.rstrip())
+			steamcmd_call.append("+quit")
+			
+			print(steamcmd_call)
+			subprocess.call(steamcmd_call)
+			print("\nMods downloaded\n")
 
 if __name__ == '__main__':
 	MyPrompt().cmdloop()
