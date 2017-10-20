@@ -7,10 +7,6 @@ class MyPrompt(cmd.Cmd):
 
 	steamcdm_path = "E:\\Programing\\SteamCMD\\steamcmd.exe"
 
-	def do_add(self, arg):
-		"Adds a mod to the mod list. Type the Game ID and the ModID."
-		ModList.add(arg.split())
-
 	def do_list(self, arg):
 		"Shows the mod list."
 		modlist = ModList.read()
@@ -20,6 +16,14 @@ class MyPrompt(cmd.Cmd):
 				print("Game ID: {0}, Mod ID: {1}".format(mod[0], mod[1]))
 		else:
 			print("Modlist is empty.")
+
+	def do_add(self, arg):
+		"Adds a mod to the mod list. Type the Game ID and the ModID."
+		ModList.add(arg.split())
+
+	def do_delete(self, arg):
+		"Deletes a mod from the Mod List. Type the the ModID."
+		ModList.delete(arg)
 
 	def do_download(self, arg):
 		"Launches SteamCMD and then quits."
@@ -34,25 +38,30 @@ class ModList:
 
 	def create():
 		if not ModList.exists():
-			file = open(ModList.filename,"r")
-
+			with open(ModList.filename,"w") as file:
+				return
 	def exists():
 		return os.path.isfile(ModList.filename)
 
 	def read():
 		if ModList.exists():
-			file = open(ModList.filename,"r")
-			return file.readlines()
+			with open(ModList.filename,"r") as file:
+				modlist = file.readlines()
+			for line in modlist: line.rstrip()
+			return modlist
 		else:
 			return None
 
-
 	def add(mod):
-		file = open(ModList.filename,"a")
-		file.write("{0} {1}\n".format(mod[0], mod[1]))
-		file.close()
+		with open(ModList.filename, "a") as file:
+			file.write("{0} {1}\n".format(mod[0], mod[1]))
 
-
+	def delete(mod):
+		read_modlist = ModList.read()
+		with open(ModList.filename,'w') as write_modlist:
+		    for line in read_modlist:
+		        if line.split()[1] != mod:
+		            write_modlist.write(line)
 
 if __name__ == '__main__':
 	MyPrompt().cmdloop()
