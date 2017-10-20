@@ -5,8 +5,6 @@ class MyPrompt(cmd.Cmd):
 	prompt = "> " 
 	file = None
 
-	steamcdm_path = "E:\\Programing\\SteamCMD\\steamcmd.exe"
-
 	def do_list(self, arg):
 		"Shows the mod list."
 		modlist = ModList.read()
@@ -27,11 +25,7 @@ class MyPrompt(cmd.Cmd):
 
 	def do_download(self, arg):
 		"Launches SteamCMD and then quits."
-		if os.path.isfile(self.steamcdm_path):
-			subprocess.call([self.steamcdm_path, "+quit"])
-			print("\nMods downloaded\n")
-		else:
-			print("Error: SteamCMD not detected at {0}".format(self.steamcdm_path))
+		SteamCmd.run("download", arg)
 
 class ModList:
 	filename = "modlist.txt"
@@ -40,7 +34,9 @@ class ModList:
 		if not ModList.exists():
 			with open(ModList.filename,"w") as file:
 				return
+	
 	def exists():
+
 		return os.path.isfile(ModList.filename)
 
 	def read():
@@ -62,6 +58,20 @@ class ModList:
 		    for line in read_modlist:
 		        if line.split()[1] != mod:
 		            write_modlist.write(line)
+
+class SteamCmd:
+	path = "E:\\Programing\\SteamCMD\\steamcmd.exe"
+
+	def run(action, arg):
+		if os.path.isfile(SteamCmd.path):
+			funcion = getattr(SteamCmd, action)
+			function()
+		else:
+			print("Error: SteamCdm not detected.")
+
+	def download():
+		subprocess.call([SteamCmd.path, "+quit"])
+		print("\nMods downloaded\n")
 
 if __name__ == '__main__':
 	MyPrompt().cmdloop()
