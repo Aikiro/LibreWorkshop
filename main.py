@@ -1,4 +1,4 @@
-import cmd, sys, subprocess, os, ast, urllib.request, zipfile
+import cmd, sys, subprocess, os, ast, urllib.request, zipfile, json
 
 class MyPrompt(cmd.Cmd):
 	intro = "\nWelcome to LibreWorkshop. Type help or ? to list commands.\n"
@@ -13,7 +13,9 @@ class MyPrompt(cmd.Cmd):
 		exit()
 
 	def do_test(self, arg):
-		SteamWebApi.call_api(arg)
+		modjson = SteamWebApi.get_modjson(arg)
+		mod_tittle = JsonUtils.parse_modjson(modjson)
+		print(mod_tittle)
 
 	def do_list(self, arg):
 		"Shows the mod list."
@@ -152,18 +154,24 @@ class SteamWebApi:
 	API_URL = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
 	DATA_VALUES = "key=AAC8D1DCEBABCB787FBABC3FA27C2FBD&itemcount=1&publishedfileids[0]="
 
-	def call_api(modid):
-		print("call_api method called")
+	def get_modjson(modid):
 		data = SteamWebApi.DATA_VALUES + modid
 		encoded_data = data.encode('utf-8')
 
-		print("calling request")
-		mod_json = urllib.request.urlopen(SteamWebApi.API_URL, data=encoded_data)
-		mod_json = mod_json.read().decode('utf-8')
+		modjson = urllib.request.urlopen(SteamWebApi.API_URL, data=encoded_data)
+		modjson = modjson.read().decode('utf-8')
 
-		print("writing json file")
-		with open("mod_json.txt", "w") as file:
-			file.write(mod_json)
+		return modjson
+
+		"""print("writing json file")
+		with open("modjson.txt", "w") as file:
+			file.write(modjson)"""
+
+class JsonUtils:
+	def parse_modjson(modjson):   
+		data = json.loads(modjson)
+		mod_tittle = data["response"]["publishedfiledetails"][0]["title"]
+		return mod_tittle
 
 
 
