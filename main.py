@@ -37,6 +37,7 @@ class ModList:
 			return
 	
 	def exists():
+
 		return os.path.isfile(ModList.filename)
 
 	def not_empty():
@@ -92,7 +93,7 @@ class SteamCmd:
 		if modlist:
 			steamcmd_call = [SteamCmd.path, SteamCmd.login]
 			for mod in modlist:
-				steamcmd_call.append("+workshop_download_item " + mod.rstrip())
+				steamcmd_call.append("+workshop_download_item {0} {1}".format(mod[0], mod[1]))
 			steamcmd_call.append("+quit")
 			
 			subprocess.call(steamcmd_call)
