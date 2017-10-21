@@ -17,12 +17,7 @@ class MyPrompt(cmd.Cmd):
 
 	def do_list(self, arg):
 		"Shows the mod list."
-		modlist = ModList.read()
-		if modlist:
-			for mod in modlist:
-				print("Game ID: {0}, Mod ID: {1}".format(mod[0], mod[1]))
-		else:
-			print("Modlist is empty.")
+		ModList.list()
 
 	def do_add(self, arg):
 		"Adds a mod to the mod list. Type the Game ID and the ModID."
@@ -47,6 +42,14 @@ class ModList:
 	def create():
 		with open(ModList.filename,"w") as file:
 			return
+
+	def list():
+		modlist = ModList.read()
+		if modlist:
+			for mod in modlist:
+				print("Game ID: {0}, Mod ID: {1}".format(mod[0], mod[1]))
+		else:
+			print("Modlist is empty.")
 	
 	def exists():
 		return os.path.isfile(ModList.filename)
