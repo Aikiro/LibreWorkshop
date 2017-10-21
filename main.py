@@ -1,16 +1,18 @@
-import cmd, sys, subprocess, os
+import cmd, sys, subprocess, os, ast
 
 class MyPrompt(cmd.Cmd):
 	intro = "Welcome to LibreWorkshop. Type help or ? to list commands.\n"
 	prompt = "> " 
 	file = None
 
+	def do_test(self, arg):
+		return
+
 	def do_list(self, arg):
 		"Shows the mod list."
 		modlist = ModList.read()
 		if modlist:
-			for line in modlist:
-				mod = line.split()
+			for mod in modlist:
 				print("Game ID: {0}, Mod ID: {1}".format(mod[0], mod[1]))
 		else:
 			print("Modlist is empty.")
@@ -31,33 +33,48 @@ class ModList:
 	filename = "modlist.txt"
 
 	def create():
-		if not ModList.exists():
-			with open(ModList.filename,"w") as file:
-				return
+		with open(ModList.filename,"w") as file:
+			return
 	
 	def exists():
-
 		return os.path.isfile(ModList.filename)
 
-	def read():
+	def not_empty():
 		if ModList.exists():
 			with open(ModList.filename,"r") as file:
-				modlist = file.readlines()
-			for line in modlist: line.rstrip()
+				modlist = file.readline()
+				if modlist:
+					return True
+		else:
+			return False
+
+	def read():
+		if ModList.not_empty():
+			with open(ModList.filename,"r") as file:
+				modlist_read = file.readline()
+			modlist = ast.literal_eval(modlist_read)
 			return modlist
 		else:
-			return None
+			return []
+
+	def write(modlist):
+		with open(ModList.filename, "w") as file:
+			file.write(str(modlist))
 
 	def add(mod):
-		with open(ModList.filename, "a") as file:
-			file.write("{0} {1}\n".format(mod[0], mod[1]))
+		modlist = ModList.read()
+		modlist.append(mod)
+
+		ModList.write(modlist)
 
 	def delete(mod):
-		read_modlist = ModList.read()
-		with open(ModList.filename,'w') as write_modlist:
-		    for line in read_modlist:
-		        if line.split()[1] != mod:
-		            write_modlist.write(line)
+		modlist = ModList.read()
+		new_modlist = []
+		for m in modlist:
+		    if m[1] != mod:
+		        new_modlist.append(m)
+		
+		ModList.write(modlist)
 
 class SteamCmd:
 	path = "E:\\Programing\\SteamCMD\\steamcmd.exe"
@@ -74,12 +91,10 @@ class SteamCmd:
 		modlist = ModList.read()
 		if modlist:
 			steamcmd_call = [SteamCmd.path, SteamCmd.login]
-			modlist_to_line = ""
 			for mod in modlist:
 				steamcmd_call.append("+workshop_download_item " + mod.rstrip())
 			steamcmd_call.append("+quit")
 			
-			print(steamcmd_call)
 			subprocess.call(steamcmd_call)
 			print("\nMods downloaded\n")
 
