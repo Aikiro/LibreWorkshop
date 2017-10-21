@@ -1,12 +1,16 @@
-import cmd, sys, subprocess, os, ast
+import cmd, sys, subprocess, os, ast, urllib.request
 
 class MyPrompt(cmd.Cmd):
 	intro = "Welcome to LibreWorkshop. Type help or ? to list commands.\n"
 	prompt = "> " 
 	file = None
 
+	def preloop(self):
+		print("Preloop shit")
+		SteamCmd.install()
+
 	def do_test(self, arg):
-		return
+		pass
 
 	def do_list(self, arg):
 		"Shows the mod list."
@@ -26,8 +30,13 @@ class MyPrompt(cmd.Cmd):
 		ModList.delete(arg)
 
 	def do_download(self, arg):
-		"Launches SteamCMD and then quits."
+		"Download mods from the mod list."
 		SteamCmd.run("download", arg)
+
+	def do_update(self, arg):
+		"Update installed mods"
+		SteamCmd.run("download", arg)
+
 
 class ModList:
 	filename = "modlist.txt"
@@ -37,7 +46,6 @@ class ModList:
 			return
 	
 	def exists():
-
 		return os.path.isfile(ModList.filename)
 
 	def not_empty():
@@ -78,8 +86,31 @@ class ModList:
 		ModList.write(modlist)
 
 class SteamCmd:
+	DOWNLOAD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip"
 	path = "E:\\Programing\\SteamCMD\\steamcmd.exe"
-	login = "+login anonymous"
+	path_zip = "E:\\Programing\\LibreWorkshop\\steamcmd.zip"
+	LOGIN = "+login anonymous"
+
+	def installed():
+		return os.path.isfile(SteamCmd.path_zip)
+
+	def install():
+		SteamCmd.download_steamcmd()
+
+	def download_steamcmd():
+		if not SteamCmd.installed():
+			print("Requesting steamcmd.zip")
+			steamcmd_zip = urllib.request.urlopen(SteamCmd.DOWNLOAD_URL)
+			
+			print("Downloading steamcmd.zip")
+			steamcmd_zip = steamcmd_zip.read()
+			
+			print("Writing steamcmd.zip")
+			with open('steamcmd.zip', 'wb') as fobj:
+				fobj.write(steamcmd_zip)
+
+			print("Downloading done.")
+
 
 	def run(action, arg):
 		if os.path.isfile(SteamCmd.path):
@@ -91,7 +122,7 @@ class SteamCmd:
 	def download():
 		modlist = ModList.read()
 		if modlist:
-			steamcmd_call = [SteamCmd.path, SteamCmd.login]
+			steamcmd_call = [SteamCmd.path, SteamCmd.LOGIN]
 			for mod in modlist:
 				steamcmd_call.append("+workshop_download_item {0} {1}".format(mod[0], mod[1]))
 			steamcmd_call.append("+quit")
