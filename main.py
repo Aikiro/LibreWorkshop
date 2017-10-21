@@ -1,12 +1,16 @@
-import cmd, sys, subprocess, os, ast, urllib.request
+import cmd, sys, subprocess, os, ast, urllib.request, zipfile
 
 class MyPrompt(cmd.Cmd):
-	intro = "Welcome to LibreWorkshop. Type help or ? to list commands.\n"
+	intro = "\nWelcome to LibreWorkshop. Type help or ? to list commands.\n"
 	prompt = "> " 
 	file = None
 
 	def preloop(self):
 		SteamCmd.install()
+
+	def do_exit(self, arg):
+		"Exits"
+		exit()
 
 	def do_test(self, arg):
 		pass
@@ -30,11 +34,11 @@ class MyPrompt(cmd.Cmd):
 
 	def do_download(self, arg):
 		"Download mods from the mod list."
-		SteamCmd.run("download", arg)
+		SteamCmd.run("download")
 
 	def do_update(self, arg):
 		"Update installed mods"
-		SteamCmd.run("download", arg)
+		SteamCmd.run("download")
 
 
 class ModList:
@@ -86,36 +90,52 @@ class ModList:
 
 class SteamCmd:
 	DOWNLOAD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip"
-	path = "E:\\Programing\\SteamCMD\\steamcmd.exe"
-	path_zip = "E:\\Programing\\LibreWorkshop\\steamcmd.zip"
+	path_dir = "SteamCMD"
+	path_exe = "SteamCMD\\steamcmd.exe"
+	path_zip = "steamcmd.zip"
 	LOGIN = "+login anonymous"
 
 	def installed():
-		return os.path.isfile(SteamCmd.path_zip)
+		return os.path.isfile(SteamCmd.path_exe)
 
 	def install():
 		if not SteamCmd.installed():
-			SteamCmd.download_steamcmd()
-		else:
-			print("SteamCmd already installed.")
+			print("\nLibreWorkshop needs SteamCMD to work, and it is not installed.")
+			print("\nDo you want to download and install SteamCMD?")
+			answer = input("> ")
+			if (answer == "yes" or answer == "y" ):
+				SteamCmd.download_steamcmd()
+				SteamCmd.run("first_run")
+			else:
+				exit()
 
 	def download_steamcmd():
 		steamcmd_zip = urllib.request.urlopen(SteamCmd.DOWNLOAD_URL)
 		steamcmd_zip = steamcmd_zip.read()
-		with open('steamcmd.zip', 'wb') as fobj:
+		with open(SteamCmd.path_zip, 'wb') as fobj:
 			fobj.write(steamcmd_zip)
 
-	def run(action, arg):
-		if os.path.isfile(SteamCmd.path):
+		SteamCmd.extract_steamcmd()
+
+	def extract_steamcmd():
+		if zipfile.is_zipfile(SteamCmd.path_zip):
+			with zipfile.ZipFile(SteamCmd.path_zip) as zf:
+				zf.extractall(path = SteamCmd.path_dir)
+
+	def run(action):
+		if os.path.isfile(SteamCmd.path_exe):
 			function = getattr(SteamCmd, action)
 			function()
 		else:
-			print("Error: SteamCmd not detected.")
+			print("Error: SteamCmd not installed.")
+
+	def first_run():
+		subprocess.call([SteamCmd.path_exe, "+quit"])
 
 	def download():
 		modlist = ModList.read()
 		if modlist:
-			steamcmd_call = [SteamCmd.path, SteamCmd.LOGIN]
+			steamcmd_call = [SteamCmd.path_exe, SteamCmd.LOGIN]
 			for mod in modlist:
 				steamcmd_call.append("+workshop_download_item {0} {1}".format(mod[0], mod[1]))
 			steamcmd_call.append("+quit")
