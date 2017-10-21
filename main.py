@@ -13,7 +13,7 @@ class MyPrompt(cmd.Cmd):
 		exit()
 
 	def do_test(self, arg):
-		pass
+		SteamWebApi.call_api(arg)
 
 	def do_list(self, arg):
 		"Shows the mod list."
@@ -29,14 +29,14 @@ class MyPrompt(cmd.Cmd):
 
 	def do_download(self, arg):
 		"Download mods from the mod list."
-		SteamCmd.run("download")
-
-	def do_update(self, arg):
-		"Update installed mods"
-		SteamCmd.run("download")
+		SteamCmd.run("download_mods")
 
 
 class ModList:
+	"This class controls the mod list. It has methods to add, delete, list, etc mods from the modist."
+	"The mod list is a python list, with nested lists written in modlist.txt."
+	"The structure is: [[GameId, ModId],[GameId, ModId],[etc, etc]]"
+	
 	filename = "modlist.txt"
 
 	def create():
@@ -108,6 +108,7 @@ class SteamCmd:
 			answer = input("> ")
 			if (answer == "yes" or answer == "y" ):
 				SteamCmd.download_steamcmd()
+				SteamCmd.extract_steamcmd()
 				SteamCmd.run("first_run")
 			else:
 				exit()
@@ -118,24 +119,24 @@ class SteamCmd:
 		with open(SteamCmd.path_zip, 'wb') as fobj:
 			fobj.write(steamcmd_zip)
 
-		SteamCmd.extract_steamcmd()
-
 	def extract_steamcmd():
 		if zipfile.is_zipfile(SteamCmd.path_zip):
 			with zipfile.ZipFile(SteamCmd.path_zip) as zf:
 				zf.extractall(path = SteamCmd.path_dir)
 
 	def run(action):
-		if os.path.isfile(SteamCmd.path_exe):
-			function = getattr(SteamCmd, action)
-			function()
-		else:
-			print("Error: SteamCmd not installed.")
+		if not SteamCmd.installed():
+			SteamCmd.install()
+		
+		function = getattr(SteamCmd, action)
+		function()
+			
 
 	def first_run():
+		"Runs steamcmd.exe for first time so it can auto-update."
 		subprocess.call([SteamCmd.path_exe, "+quit"])
 
-	def download():
+	def download_mods():
 		modlist = ModList.read()
 		if modlist:
 			steamcmd_call = [SteamCmd.path_exe, SteamCmd.LOGIN]
@@ -145,6 +146,26 @@ class SteamCmd:
 			
 			subprocess.call(steamcmd_call)
 			print("\nMods downloaded\n")
+
+class SteamWebApi:
+	STEAM_WEBAPI_KEY = "AAC8D1DCEBABCB787FBABC3FA27C2FBD"
+	API_URL = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
+	DATA_VALUES = "key=AAC8D1DCEBABCB787FBABC3FA27C2FBD&itemcount=1&publishedfileids[0]="
+
+	def call_api(modid):
+		print("call_api method called")
+		data = SteamWebApi.DATA_VALUES + modid
+		encoded_data = data.encode('utf-8')
+
+		print("calling request")
+		mod_json = urllib.request.urlopen(SteamWebApi.API_URL, data=encoded_data)
+		mod_json = mod_json.read().decode('utf-8')
+
+		print("writing json file")
+		with open("mod_json.txt", "w") as file:
+			file.write(mod_json)
+
+
 
 if __name__ == '__main__':
 	MyPrompt().cmdloop()
