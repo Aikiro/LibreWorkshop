@@ -6,7 +6,6 @@ class MyPrompt(cmd.Cmd):
 	file = None
 
 	def preloop(self):
-		print("Preloop shit")
 		SteamCmd.install()
 
 	def do_test(self, arg):
@@ -95,22 +94,16 @@ class SteamCmd:
 		return os.path.isfile(SteamCmd.path_zip)
 
 	def install():
-		SteamCmd.download_steamcmd()
+		if not SteamCmd.installed():
+			SteamCmd.download_steamcmd()
+		else:
+			print("SteamCmd already installed.")
 
 	def download_steamcmd():
-		if not SteamCmd.installed():
-			print("Requesting steamcmd.zip")
-			steamcmd_zip = urllib.request.urlopen(SteamCmd.DOWNLOAD_URL)
-			
-			print("Downloading steamcmd.zip")
-			steamcmd_zip = steamcmd_zip.read()
-			
-			print("Writing steamcmd.zip")
-			with open('steamcmd.zip', 'wb') as fobj:
-				fobj.write(steamcmd_zip)
-
-			print("Downloading done.")
-
+		steamcmd_zip = urllib.request.urlopen(SteamCmd.DOWNLOAD_URL)
+		steamcmd_zip = steamcmd_zip.read()
+		with open('steamcmd.zip', 'wb') as fobj:
+			fobj.write(steamcmd_zip)
 
 	def run(action, arg):
 		if os.path.isfile(SteamCmd.path):
