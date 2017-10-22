@@ -13,16 +13,14 @@ class MyPrompt(cmd.Cmd):
 		exit()
 
 	def do_test(self, arg):
-		modjson = SteamWebApi.get_modjson(arg)
-		mod_tittle = JsonUtils.parse_modjson(modjson)
-		print(mod_tittle)
+		ModList.create()
 
 	def do_list(self, arg):
 		"Shows the mod list."
 		ModList.list()
 
 	def do_add(self, arg):
-		"Adds a mod to the mod list. Type the Game ID and the ModID."
+		"Adds a mod to the mod list. Type the ModID."
 		ModList.add(arg.split())
 
 	def do_delete(self, arg):
@@ -39,58 +37,48 @@ class ModList:
 	"The mod list is a python list, with nested lists written in modlist.txt."
 	"The structure is: [[GameId, ModId],[GameId, ModId],[etc, etc]]"
 	
-	filename = "modlist.txt"
+	filename = "modlist.json"
 
 	def create():
+		modlist = {"mods" : {}}
 		with open(ModList.filename,"w") as file:
-			return
+			json.dump(modlist, file)
 
 	def list():
 		modlist = ModList.read()
-		if modlist:
-			for mod in modlist:
-				print("Game ID: {0}, Mod ID: {1}".format(mod[0], mod[1]))
-		else:
-			print("Modlist is empty.")
-	
+		for i, modid in enumerate(modlist["mods"], 1):
+			print("[{i}] {title}".format(i = i, title = modlist["mods"][modid]["title"]))
+
 	def exists():
 		return os.path.isfile(ModList.filename)
 
-	def not_empty():
-		if ModList.exists():
-			with open(ModList.filename,"r") as file:
-				modlist = file.readline()
-				if modlist:
-					return True
-		else:
-			return False
-
 	def read():
-		if ModList.not_empty():
-			with open(ModList.filename,"r") as file:
-				modlist_read = file.readline()
-			modlist = ast.literal_eval(modlist_read)
-			return modlist
-		else:
-			return []
+		if not ModList.exists(): ModList.create()
+		
+		with open(ModList.filename, "r") as file:
+			modlist = json.load(file)
+		return modlist
 
 	def write(modlist):
-		with open(ModList.filename, "w") as file:
-			file.write(str(modlist))
+		with open(ModList.filename,"w") as file:
+			json.dump(modlist, file, sort_keys = True, indent = 4)
+	
+	def add(modsid):
+		for modid in modsid:
+			modjson = SteamWebApi.get_modjson(modid)
+			moddata = JsonUtils.parse_modjson(modjson)
 
-	def add(mod):
+			modlist = ModList.read()
+			
+			modlist["mods"][modid] = {}
+			modlist["mods"][modid]["title"] = moddata["mod_tittle"]
+			modlist["mods"][modid]["gameid"] = moddata["gameid"]
+
+			ModList.write(modlist)
+
+	def delete(modid):
 		modlist = ModList.read()
-		modlist.append(mod)
-
-		ModList.write(modlist)
-
-	def delete(mod):
-		modlist = ModList.read()
-		new_modlist = []
-		for m in modlist:
-		    if m[1] != mod:
-		        new_modlist.append(m)
-		
+		del modlist["mods"][modid]
 		ModList.write(modlist)
 
 class SteamCmd:
@@ -139,15 +127,15 @@ class SteamCmd:
 		subprocess.call([SteamCmd.path_exe, "+quit"])
 
 	def download_mods():
+		steamcmd_call = [SteamCmd.path_exe, SteamCmd.LOGIN]
 		modlist = ModList.read()
-		if modlist:
-			steamcmd_call = [SteamCmd.path_exe, SteamCmd.LOGIN]
-			for mod in modlist:
-				steamcmd_call.append("+workshop_download_item {0} {1}".format(mod[0], mod[1]))
-			steamcmd_call.append("+quit")
-			
-			subprocess.call(steamcmd_call)
-			print("\nMods downloaded\n")
+
+		for modid in modlist["mods"]:
+			steamcmd_call.append("+workshop_download_item {} {}".format(modlist["mods"][modid]["gameid"], modid))
+		
+		steamcmd_call.append("+quit")
+		subprocess.call(steamcmd_call)
+		print("\nMods downloaded\n")
 
 class SteamWebApi:
 	STEAM_WEBAPI_KEY = "AAC8D1DCEBABCB787FBABC3FA27C2FBD"
@@ -170,8 +158,15 @@ class SteamWebApi:
 class JsonUtils:
 	def parse_modjson(modjson):   
 		data = json.loads(modjson)
+		
 		mod_tittle = data["response"]["publishedfiledetails"][0]["title"]
-		return mod_tittle
+		modid = data["response"]["publishedfiledetails"][0]["1163829480"]
+		gameid = data["response"]["publishedfiledetails"][0]["consumer_app_id"]
+		description = data["response"]["publishedfiledetails"][0]["description"]
+		
+		parsed_moddata = {"modid" : modid, "mod_tittle" : mod_tittle, "gameid" : gameid, "description" : description}
+
+		return parsed_moddata
 
 
 
