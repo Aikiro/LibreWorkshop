@@ -1,8 +1,8 @@
-import cmd, sys, subprocess, os, ast, urllib.request, zipfile, json
+import cmd, sys, subprocess, os, ast, urllib.request, zipfile, json, pprint
 
 class MyPrompt(cmd.Cmd):
 	intro = "\nWelcome to LibreWorkshop. Type help or ? to list commands.\n"
-	prompt = "> " 
+	prompt = "[ Mods ]: " 
 	file = None
 
 	def preloop(self):
@@ -46,16 +46,19 @@ class ModList:
 	def list():
 		modlist = ModList.read()
 		for i, modid in enumerate(modlist["mods"], 1):
-			print("[{i}] {title}".format(i = i, title = modlist["mods"][modid]["title"]))
+			print("[{i}] {mod[title]:25.25} {mod[gamename]}".format(i = i, mod = modlist["mods"][modid]))
+			"""https://pyformat.info/"""
 
 	def exists():
 		return os.path.isfile(ModList.filename)
 
 	def read():
-		if not ModList.exists(): ModList.create()
+		if not ModList.exists():
+			ModList.create()
 		
 		with open(ModList.filename, "r") as file:
 			modlist = json.load(file)
+		
 		return modlist
 
 	def write(modlist):
@@ -67,11 +70,14 @@ class ModList:
 			modjson = SteamWebApi.get_modjson(modid)
 			moddata = JsonUtils.parse_modjson(modjson)
 
+			gamename = SteamWebApi.get_gamename(str(moddata["gameid"]))
+
 			modlist = ModList.read()
 			
 			modlist["mods"][modid] = {}
 			modlist["mods"][modid]["title"] = moddata["mod_tittle"]
 			modlist["mods"][modid]["gameid"] = moddata["gameid"]
+			modlist["mods"][modid]["gamename"] = gamename
 
 			ModList.write(modlist)
 
@@ -139,21 +145,29 @@ class SteamCmd:
 
 class SteamWebApi:
 	STEAM_WEBAPI_KEY = "AAC8D1DCEBABCB787FBABC3FA27C2FBD"
-	API_URL = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
-	DATA_VALUES = "key=AAC8D1DCEBABCB787FBABC3FA27C2FBD&itemcount=1&publishedfileids[0]="
+	MOD_API_URL = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
+	MOD_DATA_VALUES = "key=AAC8D1DCEBABCB787FBABC3FA27C2FBD&itemcount=1&publishedfileids[0]="
+	GAME_API_URL = "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=AAC8D1DCEBABCB787FBABC3FA27C2FBD&format=json&appid="
 
 	def get_modjson(modid):
-		data = SteamWebApi.DATA_VALUES + modid
+		data = SteamWebApi.MOD_DATA_VALUES + modid
 		encoded_data = data.encode('utf-8')
 
-		modjson = urllib.request.urlopen(SteamWebApi.API_URL, data=encoded_data)
-		modjson = modjson.read().decode('utf-8')
+		modjson_url = urllib.request.urlopen(SteamWebApi.MOD_API_URL, data=encoded_data)
+		modjson = modjson_url.read().decode('utf-8')
 
 		return modjson
 
-		"""print("writing json file")
-		with open("modjson.txt", "w") as file:
-			file.write(modjson)"""
+	def get_gamename(gameid):
+		gamejson_url = urllib.request.urlopen(SteamWebApi.GAME_API_URL + gameid)
+		
+		gamejson = gamejson_url.read().decode('utf-8')
+		
+		decoded_gamejson = json.loads(gamejson)
+		
+		gamename = decoded_gamejson["game"]["gameName"]
+
+		return gamename
 
 class JsonUtils:
 	def parse_modjson(modjson):   
