@@ -1,4 +1,4 @@
-import cmd, sys, subprocess, os, ast, urllib.request, zipfile, json, pprint
+import cmd, sys, subprocess, os, ast, urllib.request, zipfile, json, pprint, shutil
 
 class MyPrompt(cmd.Cmd):
 	intro = "\nWelcome to LibreWorkshop. Type help or ? to list commands.\n"
@@ -13,7 +13,7 @@ class MyPrompt(cmd.Cmd):
 		exit()
 
 	def do_test(self, arg):
-		ModList.create()
+		ModsFileHandler.copymods(arg)
 
 	def do_list(self, arg):
 		"Shows the mod list."
@@ -30,7 +30,6 @@ class MyPrompt(cmd.Cmd):
 	def do_download(self, arg):
 		"Download mods from the mod list."
 		SteamCmd.run("download_mods")
-
 
 class ModList:
 	"This class controls the mod list. It has methods to add, delete, list, etc mods from the modist."
@@ -181,6 +180,35 @@ class JsonUtils:
 		parsed_moddata = {"modid" : modid, "mod_tittle" : mod_tittle, "gameid" : gameid, "description" : description}
 
 		return parsed_moddata
+
+class ModsFileHandler:
+	"mods are at SteamCMD\steamapps\workshop\content\gameid\modid\mod.pak"
+	
+	incomplete_from_path = "SteamCMD\\steamapps\\workshop\\content\\"
+	to_path = "Installed_Mods"
+	
+	def copymods(gameid):
+		#shutil.copy(src, dst)
+		modlist = ModList.read()
+
+		for modid in modlist["mods"]:
+			
+			gameid = modlist["mods"][modid]["gameid"]
+			modname = modlist["mods"][modid]["title"]
+			complete_from_path = ModsFileHandler.incomplete_from_path + "{gameid}\\{modid}".format(gameid = gameid , modid = modid)
+			
+			for file in os.listdir(complete_from_path):
+				 if file.endswith(".pak"):
+				 	source = "{path}\\{filename}".format(path = complete_from_path, filename = file)
+				 	destination = "{path}\\{modid} {modname}.pak".format(path = ModsFileHandler.to_path, modid = modid, modname = modname )
+				 	
+				 	shutil.copy2(source, destination)
+
+
+	#	for file in os.listdir("/mydir"):
+	#		if file.endswith(".txt"):
+	#	print(os.path.join("/mydir", file))
+
 
 if __name__ == '__main__':
 	MyPrompt().cmdloop()
