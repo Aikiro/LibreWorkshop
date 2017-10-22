@@ -28,8 +28,10 @@ class MyPrompt(cmd.Cmd):
 		ModList.delete(arg.split())
 
 	def do_download(self, arg):
-		"Download mods from the mod list."
-		SteamCmd.run("download_mods")
+		"Download mods from the mod list. arg = gameid"
+		SteamCmd.run("download_mods", arg)
+		ModsFileHandler.copymods(arg)
+
 
 class ModList:
 	"This class controls the mod list. It has methods to add, delete, list, etc mods from the modist."
@@ -104,7 +106,7 @@ class SteamCmd:
 			if (answer == "yes" or answer == "y" ):
 				SteamCmd.download_steamcmd()
 				SteamCmd.extract_steamcmd()
-				SteamCmd.run("first_run")
+				SteamCmd.run("first_run", "all")
 			else:
 				exit()
 
@@ -119,25 +121,28 @@ class SteamCmd:
 			with zipfile.ZipFile(SteamCmd.path_zip) as zf:
 				zf.extractall(path = SteamCmd.path_dir)
 
-	def run(action):
+	def run(action, gameid):
 		if not SteamCmd.installed():
 			SteamCmd.install()
 		
 		function = getattr(SteamCmd, action)
-		function()
+		function(gameid)
 			
 
-	def first_run():
+	def first_run(arg):
 		"Runs steamcmd.exe for first time so it can auto-update."
 		subprocess.call([SteamCmd.path_exe, "+quit"])
 
-	def download_mods():
+	def download_mods(arg_gameid):
 		steamcmd_call = [SteamCmd.path_exe, SteamCmd.LOGIN]
 		modlist = ModList.read()
+		download_all = True if arg_gameid =="all" else False
 
 		for modid in modlist["mods"]:
-			steamcmd_call.append("+workshop_download_item {} {}".format(modlist["mods"][modid]["gameid"], modid))
-		
+			gameid = str(modlist["mods"][modid]["gameid"])
+			if download_all or gameid == arg_gameid:
+				steamcmd_call.append("+workshop_download_item {} {}".format(modlist["mods"][modid]["gameid"], modid))
+
 		steamcmd_call.append("+quit")
 		subprocess.call(steamcmd_call)
 		print("\nMods downloaded\n")
@@ -187,22 +192,27 @@ class ModsFileHandler:
 	incomplete_from_path = "SteamCMD\\steamapps\\workshop\\content\\"
 	to_path = "Installed_Mods"
 	
-	def copymods(gameid):
+	def copymods(arg_gameid):
 		#shutil.copy(src, dst)
 		modlist = ModList.read()
+		
+		download_all = True if arg_gameid == "all" else False
 
 		for modid in modlist["mods"]:
+
+			gameid = str(modlist["mods"][modid]["gameid"])
 			
-			gameid = modlist["mods"][modid]["gameid"]
-			modname = modlist["mods"][modid]["title"]
-			complete_from_path = ModsFileHandler.incomplete_from_path + "{gameid}\\{modid}".format(gameid = gameid , modid = modid)
-			
-			for file in os.listdir(complete_from_path):
-				 if file.endswith(".pak"):
-				 	source = "{path}\\{filename}".format(path = complete_from_path, filename = file)
-				 	destination = "{path}\\{modid} {modname}.pak".format(path = ModsFileHandler.to_path, modid = modid, modname = modname )
-				 	
-				 	shutil.copy2(source, destination)
+			if download_all or arg_gameid == gameid:
+
+				modname = modlist["mods"][modid]["title"]
+				complete_from_path = ModsFileHandler.incomplete_from_path + "{gameid}\\{modid}".format(gameid = gameid , modid = modid)
+				
+				for file in os.listdir(complete_from_path):
+					 if file.endswith(".pak"):
+					 	source = "{path}\\{filename}".format(path = complete_from_path, filename = file)
+					 	destination = "{path}\\{modid} {modname}.pak".format(path = ModsFileHandler.to_path, modid = modid, modname = modname )
+					 	
+					 	shutil.copy2(source, destination)
 
 
 	#	for file in os.listdir("/mydir"):
