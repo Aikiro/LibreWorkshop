@@ -25,7 +25,7 @@ class MyPrompt(cmd.Cmd):
 
 	def do_delete(self, arg):
 		"Deletes a mod from the Mod List. Type the the ModID."
-		ModList.delete(arg)
+		ModList.delete(arg.split())
 
 	def do_download(self, arg):
 		"Download mods from the mod list."
@@ -34,8 +34,7 @@ class MyPrompt(cmd.Cmd):
 
 class ModList:
 	"This class controls the mod list. It has methods to add, delete, list, etc mods from the modist."
-	"The mod list is a python list, with nested lists written in modlist.txt."
-	"The structure is: [[GameId, ModId],[GameId, ModId],[etc, etc]]"
+	"The mod list is a json file."
 	
 	filename = "modlist.json"
 
@@ -76,10 +75,11 @@ class ModList:
 
 			ModList.write(modlist)
 
-	def delete(modid):
-		modlist = ModList.read()
-		del modlist["mods"][modid]
-		ModList.write(modlist)
+	def delete(modsid):
+		for modid in modsid:
+			modlist = ModList.read()
+			del modlist["mods"][modid]
+			ModList.write(modlist)
 
 class SteamCmd:
 	DOWNLOAD_URL = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip"
@@ -160,15 +160,13 @@ class JsonUtils:
 		data = json.loads(modjson)
 		
 		mod_tittle = data["response"]["publishedfiledetails"][0]["title"]
-		modid = data["response"]["publishedfiledetails"][0]["1163829480"]
+		modid = data["response"]["publishedfiledetails"][0]["publishedfileid"]
 		gameid = data["response"]["publishedfiledetails"][0]["consumer_app_id"]
 		description = data["response"]["publishedfiledetails"][0]["description"]
 		
 		parsed_moddata = {"modid" : modid, "mod_tittle" : mod_tittle, "gameid" : gameid, "description" : description}
 
 		return parsed_moddata
-
-
 
 if __name__ == '__main__':
 	MyPrompt().cmdloop()
