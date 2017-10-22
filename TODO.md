@@ -1,0 +1,4 @@
+# TODO List
+* Config file to store where are the Games' mods directories.
+* Change modlist.json format so gameid is the parent, and modid the child.
+* Delete mod(s) functionality from modlist and from harddrive.
